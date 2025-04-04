@@ -1,0 +1,20 @@
+{
+    "manifest_version": 3,
+    "name": "GForm Auto Solver by Degs",
+    "version": "1.0",
+    "description": "Extention for auto solve Google form with gemini ai",
+    "permissions": ["storage", "scripting", "activeTab"],
+    "host_permissions": ["https://docs.google.com/forms/*"],
+    "background": {
+      "service_worker": "dashexec.js"
+    },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+      }
+    }
+  }
+  
