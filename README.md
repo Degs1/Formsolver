@@ -2,7 +2,7 @@
 
 **preview**
 
-[![Thumbnail](https://img.icons8.com/color/96/000000/video.png)]([https://drive.google.com/file/d/FILE_ID/preview](https://drive.google.com/file/d/1ztKbNuIN9XzmEtdyx4nL3GNZ7-qHLr8r/view?usp=sharing))
+![🎥Review video]([https://drive.google.com/file/d/FILE_ID/preview](https://drive.google.com/file/d/1ztKbNuIN9XzmEtdyx4nL3GNZ7-qHLr8r/view?usp=sharing))
 
 ## abount project
 <h3>
