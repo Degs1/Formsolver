@@ -2,9 +2,9 @@ console.log("🔹 GForm Auto Answer Active!");
 
 async function getAnswer(question, choices) {
     let apiKey = await chrome.storage.local.get('apikey');
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.apikey}`;
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey.apikey}`;
 
-    let prompt = `please Select the correct answer from the following options for this question:\n\n"${question}"\n\n\n${choices.join("\n")}\n\nThe answer must be exactly the same as one of the options above or if the correct answer can be more than 1 option, just include it. Do not give any additional explanation, just answer with the exact same option and any spaces or symbols must be exactly the same.`;
+    let prompt = `please Select the correct answer from the following options for this question:\n\n"${question}"\n\noption:\n${choices.join("\n")}\n\nBut put the answer with same option character,space,or symbol and explanation`;
 
     let maxTries=5;
     for (let attempt = 1; attempt <= maxTries; attempt++) {
@@ -20,16 +20,23 @@ async function getAnswer(question, choices) {
             let result = await response.json();
             // console.log(result)
             if (result.candidates && result.candidates.length > 0) {
+                await new Promise(r => setTimeout(r, 2500));
                 return result.candidates[0].content.parts[0].text.trim();
             } else {
-                return "text not found";
+                await new Promise(res => setTimeout(res, 2500));
+            }
+
+            if (attempt === maxTries) {
+                return ''
             }
         } catch (e) {
-                console.error("Error:", e,message);
-                if (e.includes("You exceeded your current quota")) {
-                    await new Promise(res => setTimeout(res, 3000));
-                } else {
-                    if (attempt === maxRetries) throw e;
+                console.error("Error:", e.message);
+                if (e.message.includes("You exceeded your current quota")) {
+                    await new Promise(res => setTimeout(res, 2500));
+                } 
+
+                if (attempt === maxTries) {
+                    return ''
                 }
         }
     }
@@ -37,7 +44,7 @@ async function getAnswer(question, choices) {
 
 async function getTextFromImage(imageUrl, question, choices) {
     let apiKey = await chrome.storage.local.get('apikey');
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.apikey}`;
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey.apikey}`;
     let maxTries=5;
 
     for (let attempt = 1; attempt <= maxTries; attempt++) {
@@ -50,7 +57,7 @@ async function getTextFromImage(imageUrl, question, choices) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [
-                            { text: `Please Select the correct answer from the following options for this question with a photo:\n\n${question}\n\n\n${choices.join("\n")}\n\nThe answer must be exactly the same as one of the options above or if the correct answer can be more than 1 option, just include it. Do not give any additional explanation, just answer with the exact same option text and any spaces or symbols must be exactly the same.` },
+                            { text: `Please Select the correct answer from the following options for this question with a photo:\n\n${question}\n\noption:\n${choices.join("\n")}\n\nBut put the answer with same option character,space,or symbol and explanation` },
                             { inline_data: { mime_type: "image/png", data: base64Image } }
                         ]
                     }]
@@ -61,19 +68,28 @@ async function getTextFromImage(imageUrl, question, choices) {
             // console.log(result);
     
             if (result.candidates && result.candidates.length > 0) {
+                await new Promise(r => setTimeout(r, 2500));
                 return result.candidates[0].content.parts[0].text.trim();
             } else {
-                return "text not found.";
+                await new Promise(res => setTimeout(res, 2500));
+            }
+
+            if (attempt === maxTries) {
+                return ''
             }
         } catch (error) {
             console.error("Error:", error.message);
-            if (error.includes("You exceeded your current quota")) {
-                await new Promise(res => setTimeout(res, 3000));
-            } else {
-                if (attempt === maxTries) throw error;
+            if (error.message.includes("You exceeded your current quota")) {
+                await new Promise(res => setTimeout(res, 2500));
+            }
+
+            if (attempt === maxTries) {
+                return ''
             }
         }
     }
+    return 'guygugvfyeted'
+
 }
 
 async function convertImageToBase64(imageUrl) {
@@ -96,7 +112,25 @@ async function updateProgress(totalSoal,soalKe) {
     chrome.storage.local.set({ value: valuee, answered: soalKe, totalsoal: totalSoal });
 }
 
+async function updateLog(question,link,option,answer) {
+    let logger = ''
+    if (link) {
+        logger+=`Img Link : ${link}\n`
+        logger+=`Question : ${question}\n\n`
+        logger+=`option : \n${option.join('\n')}\n`
+        logger+=`✅Answer : ${answer}`
+    } else {
+        logger+=`Question : ${question}\n\n`
+        logger+=`option : \n${option.join('\n')}\n`
+        logger+=`✅Answer : ${answer}`
+    }
+    logger+=`\n---------------------\n\n`
+    chrome.storage.local.set({ logapi: logger });
+}
+
 async function autoFillForm() {
+    // let btn=document.getElementById('startBot');
+    // btn.disabled=!btn.disabled;
     let questions = document.querySelectorAll(".Qr7Oae"); 
     let totalSoal=questions.length;
     let soalKe=0;
@@ -128,10 +162,11 @@ async function autoFillForm() {
         console.log(`📌question:${text}\n\nOption:\n${choices.join("\n")}`);
         let imageElement = await question.querySelector("img, div[role='img']");
         let optionss = await question.querySelector("div[role='radio'], div[role='checkbox']")
-        
+        let imageUrl;
+
         let answer = "";
         if (imageElement) {
-            let imageUrl = imageElement.src || imageElement.getAttribute("data-src");
+            imageUrl = imageElement.src || imageElement.getAttribute("data-src");
             if (imageUrl && optionss) {
                 console.log("📷 question have photo:", imageUrl);
                 answer = await getTextFromImage(imageUrl, text, choices);
@@ -153,7 +188,7 @@ async function autoFillForm() {
 
             const isChecked = await option.getAttribute("aria-checked");
 
-            if (answer === optionText || answer.includes(optionText) || optionText.includes(answer)) {
+            if (answer.toLowerCase() === optionText.toLowerCase() || answer.toLowerCase().includes(optionText.toLowerCase()) || optionText.toLowerCase().includes(answer.toLowerCase())) {
                 if (isChecked === "false") {
                     await option.click(); 
                     console.log("✔️ Anwer checked:", optionText);
@@ -167,11 +202,15 @@ async function autoFillForm() {
 
         if (!found) {
             console.log("⚠️ Ai anwer not match with all the option.");
+            await updateLog(text,imageUrl,choices,answer)
         } else {
             soalKe+=1;
             await updateProgress(totalSoal,soalKe);
+            await updateLog(text,imageUrl,choices,answer)
         }
     }
+    chrome.storage.local.set({ Donee: 'Done brow' })
+    // btn.disabled=!btn.disabled
 }
 
 
